@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Sally Vision</title>
+<title>Sally</title>
 <style>
 body{margin:0;font-family:Segoe UI,sans-serif;background:#0b141a;color:#fff}
 .header{background:#202c33;padding:12px;display:flex;justify-content:space-between}
@@ -18,8 +18,8 @@ img.preview{max-width:220px;border-radius:10px}
 </head>
 <body>
 <div class="header">
-<div>Sally Vision 💛</div>
-<button onclick="localStorage.removeItem('sally_vision_memory');location.reload()">Reset</button>
+<div>Sally 💛</div>
+<button onclick="localStorage.removeItem('sally_memory');location.reload()">Reset</button>
 </div>
 
 <div id="messages" class="messages"></div>
@@ -31,7 +31,7 @@ img.preview{max-width:220px;border-radius:10px}
 </div>
 
 <script>
-const API_KEY="PUT_YOUR_MISTRAL_KEY_HERE";
+const API_KEY="J2fFqLPBXCDBepxZ7WaehyaGuSSc4DeM";
 const API_URL="https://api.mistral.ai/v1/chat/completions";
 
 const messages=document.getElementById("messages");

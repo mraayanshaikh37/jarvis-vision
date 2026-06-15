@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sally Vision</title>
+<style>
+body{margin:0;font-family:Segoe UI,sans-serif;background:#0b141a;color:#fff}
+.header{background:#202c33;padding:12px;display:flex;justify-content:space-between}
+.messages{height:75vh;overflow:auto;padding:10px;background:#111b21}
+.msg{padding:10px;border-radius:10px;margin:8px 0;max-width:80%}
+.user{background:#005c4b;margin-left:auto}
+.bot{background:#202c33}
+.input{display:flex;gap:8px;padding:10px;background:#202c33}
+textarea{flex:1}
+img.preview{max-width:220px;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="header">
+<div>Sally Vision 💛</div>
+<button onclick="localStorage.removeItem('sally_vision_memory');location.reload()">Reset</button>
+</div>
+
+<div id="messages" class="messages"></div>
+
+<div class="input">
+<input type="file" id="imageInput" accept="image/*">
+<textarea id="textInput" placeholder="Message Sally..."></textarea>
+<button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+const API_KEY="PUT_YOUR_MISTRAL_KEY_HERE";
+const API_URL="https://api.mistral.ai/v1/chat/completions";
+
+const messages=document.getElementById("messages");
+const textInput=document.getElementById("textInput");
+const imageInput=document.getElementById("imageInput");
+
+let conversation=JSON.parse(localStorage.getItem("sally_vision_memory"))||[{
+role:"system",
+content:"You are Sally. Warm, natural, remembers context."
+}];
+
+function saveMemory(){
+localStorage.setItem("sally_vision_memory",JSON.stringify(conversation));
+}
+
+function addMessage(content,type,isImage=false){
+const div=document.createElement("div");
+div.className="msg "+type;
+if(isImage){
+div.innerHTML=`<img src="${content}" class="preview">`;
+}else{
+div.textContent=content;
+}
+messages.appendChild(div);
+messages.scrollTop=messages.scrollHeight;
+}
+
+conversation.forEach(m=>{
+if(m.image) addMessage(m.image,"user",true);
+else if(m.role==="user") addMessage(m.content,"user");
+else if(m.role==="assistant") addMessage(m.content,"bot");
+});
+
+function fileToBase64(file){
+return new Promise(resolve=>{
+const reader=new FileReader();
+reader.onload=()=>resolve(reader.result);
+reader.readAsDataURL(file);
+});
+}
+
+async function sendMessage(){
+const text=textInput.value.trim();
+const file=imageInput.files[0];
+
+if(!text && !file) return;
+
+if(text){
+addMessage(text,"user");
+conversation.push({role:"user",content:text});
+}
+
+let imageData=null;
+
+if(file){
+imageData=await fileToBase64(file);
+addMessage(imageData,"user",true);
+conversation.push({
+role:"user",
+content:"[Image Uploaded]",
+image:imageData
+});
+}
+
+saveMemory();
+
+textInput.value="";
+
+const typing=document.createElement("div");
+typing.className="msg bot";
+typing.textContent="Analyzing...";
+messages.appendChild(typing);
+
+try{
+
+let content=[];
+
+if(text){
+content.push({type:"text",text:text});
+}
+
+if(file){
+content.push({
+type:"image_url",
+image_url:imageData
+});
+}
+
+const response=await fetch(API_URL,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+API_KEY
+},
+body:JSON.stringify({
+model:"mistral-small-latest",
+messages:[{
+role:"user",
+content:content.length?content:[{type:"text",text:text}]
+}]
+})
+});
+
+const data=await response.json();
+
+typing.remove();
+
+const reply=data.choices?.[0]?.message?.content || "No response";
+
+addMessage(reply,"bot");
+
+conversation.push({
+role:"assistant",
+content:reply
+});
+
+saveMemory();
+
+}catch(e){
+
+typing.remove();
+
+addMessage("Connection/API error","bot");
+
+console.error(e);
+}
+}
+</script>
+</body>
+</html>
